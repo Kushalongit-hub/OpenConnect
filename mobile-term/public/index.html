@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>OpenConnect</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
+  <style>
+    :root {
+      --gray: #C0C0C0;
+      --gray-dark: #808080;
+      --gray-light: #D4D4D4;
+      --navy: #000080;
+      --white: #FFFFFF;
+      --black: #000000;
+      --text: #000000;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: var(--gray);
+      color: var(--text);
+      font-family: Arial, Tahoma, MS Sans Serif, sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    * { box-sizing: border-box; border-radius: 0px !important; }
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      height: 100dvh;
+      padding: 8px;
+      gap: 8px;
+    }
+    .box {
+      background: var(--black);
+      border: 2px solid var(--black);
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+    }
+    #term-pane {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--black);
+      border: 2px solid var(--black);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .term-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px;
+      background: var(--gray);
+      border-bottom: 2px solid var(--black);
+    }
+    .term-toolbar button {
+      background: var(--gray-light);
+      color: var(--text);
+      border: 2px solid var(--black);
+      padding: 6px 10px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .term-toolbar button.active {
+      background: var(--white);
+    }
+    #terminal {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      overflow: hidden;
+    }
+    .creative {
+      flex: 1;
+      min-height: 0;
+      background: var(--gray-light);
+      border: 2px solid var(--black);
+      padding: 10px;
+      overflow: auto;
+    }
+    .shortcut {
+      background: var(--gray-light);
+      color: var(--text);
+      border: 2px solid var(--black);
+      padding: 8px 12px;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      touch-action: manipulation;
+    }
+    .shortcut:active {
+      background: var(--white);
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      background: var(--gray);
+      border-bottom: 2px solid var(--black);
+    }
+    .tab {
+      padding: 8px 18px;
+      background: var(--gray-light);
+      color: var(--text);
+      border: 2px solid var(--black);
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--white);
+    }
+    .view {
+      display: none;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .view.active {
+      display: flex;
+    }
+    .sunshine-status {
+      padding: 10px;
+      background: var(--gray-light);
+      border: 2px solid var(--black);
+      margin-bottom: 8px;
+    }
+    .sunshine-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: var(--gray-light);
+      border: 2px solid var(--black);
+    }
+    .sunshine-actions button {
+      background: var(--navy);
+      color: var(--white);
+      border: 2px solid var(--black);
+      padding: 12px;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .sunshine-iframe {
+      flex: 1;
+      min-height: 0;
+      border: 2px solid var(--black);
+      background: var(--black);
+    }
+    .sunshine-iframe iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="tabs">
+      <button class="tab" data-target="gui">GUI Stream</button>
+      <button class="tab active" data-target="terminal">Live Terminal</button>
+    </div>
+
+    <div id="gui" class="view">
+      <div class="sunshine-status" id="sunshine-status">Checking Sunshine...</div>
+      <div class="sunshine-actions" id="sunshine-actions" style="display:none;">
+        <button id="launch-native">Launch Native Moonlight App</button>
+        <button id="launch-web">Open Web Player</button>
+      </div>
+    </div>
+
+    <div id="terminal" class="view active">
+      <div class="box" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+        <div class="term-toolbar">
+          <button id="term-ratio-169" class="active">16:9</button>
+          <button id="term-ratio-43">4:3</button>
+          <button id="term-rate-free">Free</button>
+          <button id="term-reload">RELOAD</button>
+        </div>
+        <div style="flex:1;min-height:0;background:#000;">
+          <div id="terminal"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="creative" id="creative">
+      <div style="font-weight:bold;margin-bottom:6px;">OpenConnect</div>
+      <div style="font-size:12px;color:var(--gray-dark);margin-bottom:8px;">Your dev box.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        <button class="shortcut" data-keys="ctrl">Ctrl</button>
+        <button class="shortcut" data-keys="alt">Alt</button>
+        <button class="shortcut" data-keys="win">Win</button>
+        <button class="shortcut" data-keys="tab">Tab</button>
+        <button class="shortcut" data-keys="enter">Enter</button>
+        <button class="shortcut" data-keys="escape">Esc</button>
+        <button class="shortcut" data-keys="f5">F5</button>
+        <button class="shortcut" id="shortcut-reload">RELOAD</button>
+        <button class="shortcut" data-keys="ctrl+c">Ctrl+C</button>
+        <button class="shortcut" data-keys="ctrl+v">Ctrl+V</button>
+        <button class="shortcut" data-keys="ctrl+x">Ctrl+X</button>
+        <button class="shortcut" data-keys="ctrl+z">Ctrl+Z</button>
+        <button class="shortcut" data-keys="ctrl+a">Ctrl+A</button>
+        <button class="shortcut" data-keys="alt+tab">Alt+Tab</button>
+        <button class="shortcut" data-keys="ctrl+alt+del">Ctrl+Alt+Del</button>
+        <button class="shortcut" data-keys="ctrl+shift+esc">Task Mgr</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const term = new Terminal({
+      theme: { background: '#000000', foreground: '#e6edf3', cursor: '#ffb366', cursorAccent: '#000' },
+      fontSize: 8,
+      fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+      letterSpacing: 0,
+      allowProposedApi: true,
+    });
+    const fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.open(document.getElementById('terminal'));
+    fitAddon.fit();
+
+    term.onData((data) => socket.emit('input', data));
+    term.onResize((size) => socket.emit('resize', { cols: size.cols, rows: size.rows }));
+    socket.on('output', (data) => {
+      term.write(data);
+      requestAnimationFrame(() => {
+        fitAddon.fit();
+        socket.emit('resize', { cols: term.cols, rows: term.rows });
+      });
+    });
+    window.addEventListener('resize', () => {
+      fitAddon.fit();
+      socket.emit('resize', { cols: term.cols, rows: term.rows });
+    });
+
+    setTimeout(() => {
+      fitAddon.fit();
+      socket.emit('resize', { cols: term.cols, rows: term.rows });
+    }, 0);
+
+    const termPane = document.getElementById('term-pane');
+    const btn169 = document.getElementById('term-ratio-169');
+    const btn43 = document.getElementById('term-ratio-43');
+    const btnFree = document.getElementById('term-rate-free');
+
+    function setTermRatio(mode) {
+      [btn169, btn43, btnFree].forEach((b) => b.classList.remove('active'));
+      if (mode === '16:9') {
+        termPane.style.aspectRatio = '16 / 9';
+        btn169.classList.add('active');
+      } else if (mode === '4:3') {
+        termPane.style.aspectRatio = '4 / 3';
+        btn43.classList.add('active');
+      } else {
+        termPane.style.aspectRatio = 'auto';
+        termPane.style.flex = '1';
+        termPane.style.minHeight = '0';
+        btnFree.classList.add('active');
+      }
+      setTimeout(() => fitAddon.fit(), 0);
+    }
+
+    btn169.addEventListener('click', () => setTermRatio('16:9'));
+    btn43.addEventListener('click', () => setTermRatio('4:3'));
+    btnFree.addEventListener('click', () => setTermRatio('free'));
+    document.getElementById('term-reload').addEventListener('click', () => location.reload());
+
+    const tabs = document.querySelectorAll('.tab');
+    const views = document.querySelectorAll('.view');
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('active'));
+        views.forEach((v) => v.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.target).classList.add('active');
+        if (tab.dataset.target === 'terminal') setTimeout(() => fitAddon.fit(), 0);
+      });
+    });
+
+    document.querySelectorAll('.shortcut').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const keys = btn.dataset.keys;
+        if (keys) socket.emit('bridge-input', { type: 'keyboard', keys });
+      });
+    });
+
+    const shortcutReload = document.getElementById('shortcut-reload');
+    if (shortcutReload) {
+      shortcutReload.addEventListener('click', () => location.reload());
+    }
+
+    const sunshineStatus = document.getElementById('sunshine-status');
+    const sunshineActions = document.getElementById('sunshine-actions');
+    const sunshineIframe = document.getElementById('sunshine-iframe');
+
+    async function checkSunshine() {
+      try {
+        const res = await fetch('/api/sunshine-status');
+        const data = await res.json();
+        if (data.running) {
+          sunshineStatus.textContent = 'High-performance stream ready.';
+          sunshineActions.style.display = 'flex';
+          sunshineIframe.style.display = 'none';
+        } else {
+          sunshineStatus.textContent = 'Sunshine Host is offline. Please start Sunshine on the host PC.';
+          sunshineActions.style.display = 'none';
+          sunshineIframe.style.display = 'none';
+        }
+      } catch {
+        sunshineStatus.textContent = 'Unable to check Sunshine status.';
+        sunshineActions.style.display = 'none';
+        sunshineIframe.style.display = 'none';
+      }
+    }
+
+    document.getElementById('launch-native').addEventListener('click', () => {
+      window.open('moonlight://', '_blank');
+    });
+
+    document.getElementById('launch-web').addEventListener('click', () => {
+      window.open('https://moonlightweb.top', '_blank');
+    });
+
+    checkSunshine();
+    setInterval(checkSunshine, 5000);
+  </script>
+</body>
+</html>

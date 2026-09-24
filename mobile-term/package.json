@@ -1,0 +1,15 @@
+{
+  "name": "mobile-term",
+  "version": "1.0.0",
+  "description": "Interactive remote GUI + terminal for Samsung S20 FE",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "socket.io": "^4.7.0",
+    "node-pty": "^1.0.0",
+    "ws": "^8.16.0"
+  }
+}
